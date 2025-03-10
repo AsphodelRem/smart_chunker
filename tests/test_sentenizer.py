@@ -6,10 +6,10 @@ from transformers import AutoTokenizer
 
 
 try:
-    from sentenizer.sentenizer import split_text_into_sentences, split_sentence
+    from smart_chunker.sentenizer import split_text_into_sentences, split_sentence
 except:
     sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-    from sentenizer.sentenizer import split_text_into_sentences, split_sentence
+    from smart_chunker.sentenizer import split_text_into_sentences, split_sentence
 
 
 class TestSentenizer(unittest.TestCase):

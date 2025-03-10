@@ -6,12 +6,12 @@ import warnings
 import torch
 
 try:
-    from chunker.chunker import SmartChunker
-    from sentenizer.sentenizer import split_text_into_sentences
+    from smart_chunker.chunker import SmartChunker
+    from smart_chunker.sentenizer import split_text_into_sentences
 except:
     sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-    from chunker.chunker import SmartChunker
-    from sentenizer.sentenizer import split_text_into_sentences
+    from smart_chunker.chunker import SmartChunker
+    from smart_chunker.sentenizer import split_text_into_sentences
 
 
 class TestSmartChunker(unittest.TestCase):

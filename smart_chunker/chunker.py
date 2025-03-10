@@ -5,7 +5,7 @@ import warnings
 import torch
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
-from sentenizer.sentenizer import split_text_into_sentences, calculate_sentence_length
+from smart_chunker.sentenizer import split_text_into_sentences, calculate_sentence_length
 
 
 MAX_SEQ_LEN: int = 512
