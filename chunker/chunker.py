@@ -8,6 +8,9 @@ from transformers import AutoModelForSequenceClassification, AutoTokenizer
 from sentenizer.sentenizer import split_text_into_sentences, calculate_sentence_length
 
 
+MAX_SEQ_LEN: int = 512
+
+
 class SmartChunker:
     def __init__(self, language: str = 'ru', reranker_name: str = 'BAAI/bge-reranker-v2-m3',
                  newline_as_separator: bool = True,
@@ -60,7 +63,7 @@ class SmartChunker:
         new_pair = [' '.join(sentences[start_pos:middle_pos]), ' '.join(sentences[middle_pos:end_pos])]
         left_length = calculate_sentence_length(new_pair[0], self.tokenizer_)
         right_length = calculate_sentence_length(new_pair[1], self.tokenizer_)
-        while (left_length + right_length) >= self.model_.max_position_embeddings:
+        while (left_length + right_length) >= MAX_SEQ_LEN:
             if left_length > right_length:
                 start_pos += 1
             else:
@@ -89,7 +92,7 @@ class SmartChunker:
             with torch.no_grad():
                 inputs = self.tokenizer_(
                     pairs[batch_start:batch_end], return_tensors='pt',
-                    padding=True, truncation=True, max_length=self.model_.max_position_embeddings
+                    padding=True, truncation=True, max_length=MAX_SEQ_LEN
                 )
                 scores += self.model_(
                     **inputs.to(self.model_.device),
