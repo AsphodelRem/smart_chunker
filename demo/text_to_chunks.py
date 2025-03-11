@@ -1,8 +1,13 @@
 from argparse import ArgumentParser
 import codecs
 import os
+import sys
 
-from smart_chunker.chunker import SmartChunker
+try:
+    from smart_chunker.chunker import SmartChunker
+except:
+    sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+    from smart_chunker.chunker import SmartChunker
 
 
 def main():
