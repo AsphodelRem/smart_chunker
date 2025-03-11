@@ -27,7 +27,7 @@ The smart chunker supports Russian and English.
 setup(
     name='smart-chunker',
     version=smart_chunker.__version__,
-    packages=find_packages(exclude=['tests']),
+    packages=find_packages(exclude=['tests', 'demo']),
     include_package_data=True,
     description='Smart-Chunker is a semantic chunker to prepare a long document for RAG',
     long_description=long_description,
