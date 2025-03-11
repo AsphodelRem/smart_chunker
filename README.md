@@ -43,7 +43,7 @@ For these tests, the `BAAI/bge-reranker-v2-m3` model will be used by default, an
 Usage
 -----
 
-After installing the **Smart-Chunker**, it can be used as a Python package in your projects. For example, you can create a new smart chunker for English using the [BAAI/bge-reranker-v2-m3](https://huggingface.co/BAAI/bge-reranker-v2-m3) and apply it to some English text as follows:
+After installing the **Smart-Chunker**, you can use it as a Python package in your projects. For example, you can create a new smart chunker for English using the [BAAI/bge-reranker-v2-m3](https://huggingface.co/BAAI/bge-reranker-v2-m3) and apply it to some English text as follows:
 
 ```python
 from smart_chunker.chunker import SmartChunker
@@ -52,9 +52,9 @@ chunker = SmartChunker(
     language='en',
     reranker_name='BAAI/bge-reranker-v2-m3',
     newline_as_separator=False,
-    device='cpu',
-    max_chunk_length=20,
-    minibatch_size=1,
+    device='cuda:0',
+    max_chunk_length=250,
+    minibatch_size=8,
     verbose=True
 )
 demo_text = 'There are many different approaches to Transformer fine-tuning. ' \
@@ -77,8 +77,29 @@ demo_text = 'There are many different approaches to Transformer fine-tuning. ' \
             'different classes form sufficiently compact regions in our space. And methods of ' \
             'contrastive learning achieve better separation. Our goal is to test, on the basis of ' \
             'the RuNNE competition (Artemova et al., 2022), how true are these theoretical ' \
-            'considerations in practice and how much will the use of comparative learning in BERT’s fine tuning allow us to build more compact high-level representations of different classes of named entities and, as a result, improve the quality of recognition of named entities.'
+            'considerations in practice and how much will the use of comparative learning in ' \
+            'BERT’s fine tuning allow us to build more compact high-level representations of ' \
+            'different classes of named entities and, as a result, improve the quality of recognition ' \
+            'of named entities.'
+chunks = chunker.split_into_chunks(source_text=demo_text)
+for cur_chunk in chunks: print(cur_chunk + '\n')
 ```
+
+During the execution process, you may see the following message in the log:
+
+```text
+There are 11 sentences in the text.
+Sentences from 0 to 6 have a length of 188 tokens.
+Sentences from 6 to 11 have a length of 192 tokens.
+Sentences from 0 to 6 form a new chunk.
+Sentences from 6 to 11 form a new chunk.
+```
+
+As a result of the execution, you will see two chunks:
+
+- **The first chunk:** There are many different approaches to Transformer fine-tuning. First, there is a development direction dedicated to the modification of the loss function and a specific problem statement. For example, training problem could be set as machine reading comprehence (question answering) instead of the standard sequence classification, or focal loss, dice loss and other things from other deep learning domains could be used instead of the standard cross-entropy loss function. Second, there are papers devoted to BERT extension, related to adding more input information from the knowledge graph, morpho-syntactic parsers and other things. Third, there is a group of algorithms associated with changing the learning procedure, such as metric learning (contrastive learning). Each direction has its own advantages and disadvantages, but the metric learning seems the most promising to us.
+
+- **The second chunk:** Because the goal of any training is not to overfit the training sample and not just to take the top of the leaderboard on a particular test sample from the general population, but to ensure the highest generalization ability on the general population as a whole. High generalization ability is associated with good separation in the feature space. A good separation is possible when objects of different classes form sufficiently compact regions in our space. And methods of contrastive learning achieve better separation. Our goal is to test, on the basis of the RuNNE competition (Artemova et al., 2022), how true are these theoretical considerations in practice and how much will the use of comparative learning in BERT’s fine tuning allow us to build more compact high-level representations of different classes of named entities and, as a result, improve the quality of recognition of named entities.
 
 Demo
 ----
