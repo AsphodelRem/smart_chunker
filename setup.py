@@ -17,7 +17,7 @@ sentences and divides the text based on the most significant
 boundaries of semantic transitions, i.e. minima in the
 above-mentioned similarity function.
 
-BAAI/bge-reranker-v2-m3, or any other class that supports the
+The BAAI/bge-reranker-v2-m3, or any other model that supports the
 AutoModelForSequenceClassification interface, should be used
 as a cross encoder.
 

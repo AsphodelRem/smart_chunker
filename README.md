@@ -4,6 +4,32 @@
 # Smart-Chunker
 This **smart chunker** is a semantic chunker to prepare a  long document for retrieval augmented generation (RAG).
 
+Unlike a usual chunker, it does not split the text into identical groups of N tokens. Instead, it uses a cross-encoder to calculate the similarity function between neighboring sentences and divides the text based on the most significant  boundaries of semantic transitions, i.e. minima in the above-mentioned similarity function.
+
+The `BAAI/bge-reranker-v2-m3`, or any other model that supports the  AutoModelForSequenceClassification interface, should be used  as a cross encoder.
+
+Key idea
+--------
+
+A key element of a RAG (Retrieval Augmented Generation) system is the module for searching the text corpus to find context relevant to the user's query for the LLM. The text corpus needs to be structured, i.e., specially prepared to make searching more efficient. One important stage of this structuring is "chunking" - breaking down large texts into smaller fragments or chunks. Often, this division is done rather primitively: the text is split into groups of tokens of equal size without considering semantics. Humans, however, improve text readability by dividing it differently: into paragraphs, which are semantically homogeneous text segments consisting of one or several sentences. The main idea of the smart chunker is to reproduce the semantic text division characteristic of human chunking, which improves the quality of text corpus structuring and positively affects the RAG system's performance.
+
+The smart chunking algorithm consists of the following steps:
+
+**Step 1.** The entire text is split into individual sentences. If the text is in English, the `sent_tokenize` function from [the nltk library](https://www.nltk.org/api/nltk.tokenize.sent_tokenize.html) is used for sentence segmentation. If the text is in Russian, the `sentenize` function from [the razdel library](https://github.com/natasha/razdel) is used. Additionally, a newline character can serve as an optional criterion for ending a sentence.
+
+**Step 2.** Multiple variants of dividing the text into two chunks are generated:
+
+- *variant 1*: the first chunk includes the first sentence, and the second chunk includes the remaining sentences from the second to the last;
+- *variant 2*: the first chunk includes the first and second sentences, and the second chunk includes the remaining sentences from the third to the last;
+- *variant 3*: the first chunk includes the first, second, and third sentences, and the second chunk includes the remaining sentences from the fourth to the last;
+- and so on...
+
+**Step 3.** Using a cross-encoder, the semantic similarity between the first and second chunks is calculated for each text division variant.
+
+**Step 4.** The final variant for dividing the text into two chunks is the one where the semantic similarity between the first and second chunks is minimal.
+
+For each of the two identified chunks, this procedure is repeated recursively until the chunks are sufficiently small (less than a predefined maximum allowable chunk length).
+
 Installing
 ----------
 
@@ -104,9 +130,38 @@ As a result of the execution, you will see two chunks:
 Demo
 ----
 
-In the `demo` subdirectory you can see the **text_to_chunks.py** script and the **data** subdirectory.
+In the `demo` subdirectory you can see the **text_to_chunks.py** script and the **data** subdirectory. The `text_to_chunks script.py` is a wrapper for the aforementioned `SmartChunker` class. You need to call this script as follows:
 
+```shell
+python text_to_chunks.py \
+    -m /path/to/cross-encoder \
+    -i /path/to/input/file/with/large/text.txt \
+    -o /path/to/resulted/file/with/chunks.txt \
+    --lang some_language \
+    --device cuda:0 \
+    --chunk 300 \
+    --minibatch 16 \
+    --newline \
+    --verbose
+```
 
+The argument **-m** is a name of cross-encoder model (for example, `BAAI/bge-reranker-v2-m3` or `Alibaba-NLP/gte-multilingual-reranker-base`). This can be the name of the model in the HuggingFace Hub or the path to a folder containing the model on a user's local device.
+
+The argument **-i** is an input file with text that needs to be split into chunks.
+
+The argument **-o** is an output file that will contain the result of splitting the source text into chunks (each chunk is on a separate line).
+
+The argument **--lang** is a language of the source text (`russian` or `english`).
+
+The argument **--device** specifies a device to use for inference (I recommend setting `cuda` or `cuda:0`, but `cpu` can also be used).
+
+The argument **--chunk** limits the maximum size of a chunk (in terms of tokens of the tokenizer used by the specified cross-encoder).
+
+The argument **--minibatch** determines the size of the mini-batch when calculating the semantic similarity between neighboring "chunk candidates" with the cross-encoder. The larger the size, the faster the calculation, but it also requires more video memory.
+
+The argument **--newline** indicates whether to use the newline character as a criterion for sentence termination when preliminary dividing text into sentences (before dividing it into chunks as sentence groups).
+
+The argument **--verbose** specifies the need to log the steps of the text splitting algorithm into chunks (if this argument is not specified, then the algorithm works "silently").
 
 License
 -------
