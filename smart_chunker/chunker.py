@@ -93,7 +93,7 @@ class SmartChunker:
         return scores
 
     def _find_chunks(self, sentences: List[str], start_pos: int, end_pos: int) -> List[str]:
-        semantic_similarities = self._calculate_similarity_func(sentences[start_pos: end_pos])
+        semantic_similarities = self._calculate_similarity_func(sentences[start_pos:end_pos])
         min_similarity_idx = 0
         for idx in range(1, len(semantic_similarities)):
             if semantic_similarities[idx] < semantic_similarities[min_similarity_idx]:
