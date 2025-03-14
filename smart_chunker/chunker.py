@@ -1,5 +1,5 @@
 import math
-from typing import List
+from typing import List, Tuple
 import warnings
 
 import torch
@@ -71,10 +71,31 @@ class SmartChunker:
             right_length = calculate_sentence_length(new_pair[1], self.tokenizer_)
         return new_pair
 
-    def _calculate_similarity_func(self, sentences: List[str]) -> List[float]:
+    def _calculate_similarity_func(self, sentences: List[str]) -> List[Tuple[int, float]]:
         if len(sentences) < 2:
             return []
-        pairs = [self._get_pair(sentences, idx) for idx in range(len(sentences) - 1)]
+        variants_of_split_index = list(filter(
+            lambda idx: (calculate_sentence_length(' '.join(sentences[0:(idx + 1)]), self.tokenizer_) <=
+                         self.max_chunk_length) and
+                        (calculate_sentence_length(' '.join(sentences[(idx + 1):]), self.tokenizer_) <=
+                         self.max_chunk_length) and
+                        (calculate_sentence_length(' '.join(sentences[0:(idx + 1)]), self.tokenizer_) >=
+                         self.max_chunk_length // 3) and
+                        (calculate_sentence_length(' '.join(sentences[(idx + 1):]), self.tokenizer_) >=
+                         self.max_chunk_length // 3),
+            range(len(sentences) - 1)
+        ))
+        if len(variants_of_split_index) == 0:
+            variants_of_split_index = list(filter(
+                lambda idx: (calculate_sentence_length(' '.join(sentences[0:(idx + 1)]), self.tokenizer_) >=
+                             self.max_chunk_length // 3) and
+                            (calculate_sentence_length(' '.join(sentences[(idx + 1):]), self.tokenizer_) >=
+                             self.max_chunk_length // 3),
+                range(len(sentences) - 1)
+            ))
+            if len(variants_of_split_index) == 0:
+                variants_of_split_index = list(range(len(sentences) - 1))
+        pairs = [self._get_pair(sentences, idx) for idx in variants_of_split_index]
         n_batches = math.ceil(len(pairs) / self.minibatch_size)
         scores = []
         for batch_idx in range(n_batches):
@@ -90,14 +111,27 @@ class SmartChunker:
                     return_dict=True
                 ).logits.float().cpu().numpy().flatten().tolist()
                 del inputs
-        return scores
+        return list(zip(variants_of_split_index, scores))
 
     def _find_chunks(self, sentences: List[str], start_pos: int, end_pos: int) -> List[str]:
+        full_text_len = calculate_sentence_length(' '.join(sentences[start_pos:end_pos]), self.tokenizer_)
+        if (full_text_len <= self.max_chunk_length) or ((end_pos - start_pos) < 2):
+            if self.verbose:
+                info_msg = f'Sentences from {start_pos} to {end_pos} form a new chunk.'
+                print(info_msg)
+            return [' '.join(sentences[start_pos:end_pos])]
         semantic_similarities = self._calculate_similarity_func(sentences[start_pos:end_pos])
-        min_similarity_idx = 0
-        for idx in range(1, len(semantic_similarities)):
-            if semantic_similarities[idx] < semantic_similarities[min_similarity_idx]:
+        if len(semantic_similarities) == 0:
+            if self.verbose:
+                info_msg = f'Sentences from {start_pos} to {end_pos} form a new chunk.'
+                print(info_msg)
+            return [' '.join(sentences[start_pos:end_pos])]
+        min_similarity_idx = semantic_similarities[0][0]
+        min_similarity_val = semantic_similarities[0][1]
+        for idx, val in semantic_similarities[1:]:
+            if val < min_similarity_val:
                 min_similarity_idx = idx
+                min_similarity_val = val
         first_chunk = ' '.join(sentences[start_pos:(start_pos + min_similarity_idx + 1)])
         second_chunk = ' '.join(sentences[(start_pos + min_similarity_idx + 1):end_pos])
         all_chunks = []
