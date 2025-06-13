@@ -1,5 +1,11 @@
 from typing import List, Union
 
+import nltk
+try:
+    nltk.data.find("tokenizers/punkt")
+except LookupError:
+    nltk.download("punkt")
+
 from nltk import sent_tokenize, wordpunct_tokenize
 from razdel import sentenize, tokenize
 from transformers import PreTrainedTokenizer, PreTrainedTokenizerFast
